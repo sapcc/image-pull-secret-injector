@@ -1,4 +1,4 @@
-IMAGE:= keppel.eu-de-1.cloud.sap/ccloud/pull-secret-injector
+IMAGE:= sapcc/pull-secret-injector
 VERSION:=0.2.0
 
 manifests: controller-gen
