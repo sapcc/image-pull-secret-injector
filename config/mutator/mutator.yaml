@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-server
+  namespace: system
+  labels:
+    control-plane: pod-mutator
+spec:
+  selector:
+    matchLabels:
+      control-plane: pod-mutator
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+      labels:
+        control-plane: pod-mutator
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: control-plane
+                operator: In
+                values:
+                - pod-mutator
+            topologyKey: kubernetes.io/hostname
+      serviceAccountName: webhook-server
+      containers:
+      - command:
+        - /mutator
+        image: controller:latest
+        name: mutator
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 50Mi
+        ports:
+        - name: metrics
+          containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /readyz/
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      terminationGracePeriodSeconds: 10
+
