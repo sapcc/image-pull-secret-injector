@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"regexp"
 
+	"github.com/docker/distribution/reference"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -54,8 +54,6 @@ func (a *podMutator) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-var dockerHubImageRE = regexp.MustCompile("^[^./]+(/|$)")
-
 func (a *podMutator) injectImagePullSecret(ctx context.Context, pod *corev1.Pod, namespace, name string) {
 
 	//if the pod already has an imagePullSecret we have nothing todo
@@ -65,7 +63,7 @@ func (a *podMutator) injectImagePullSecret(ctx context.Context, pod *corev1.Pod,
 
 	dockerHubImageFound := false
 	for _, container := range pod.Spec.Containers {
-		if dockerHubImageRE.MatchString(container.Image) {
+		if MatchImageHostname(container.Image, "docker.io") {
 			dockerHubImageFound = true
 			break
 		}
@@ -111,4 +109,19 @@ func (a *podMutator) ensurePullSecretInNamespace(ctx context.Context, namespace 
 		return a.Client.Update(ctx, localPullSecret)
 	}
 	return nil
+}
+
+func MatchImageHostname(image, hostname string) bool {
+	ref, err := reference.ParseAnyReference(image)
+	if err != nil {
+		return false
+	}
+	named, err := reference.ParseNamed(ref.String())
+	if err != nil {
+		return false
+	}
+	if hostname == "index.docker.io" {
+		hostname = "docker.io"
+	}
+	return reference.Domain(named) == hostname
 }
