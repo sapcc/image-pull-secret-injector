@@ -10,5 +10,10 @@ Why ?
 Now that Docker has introduced rather strict rate limiting for anonymous pulls this ensures all docker hub images are pulled using an authenticated (payed) account.
 
 
+Requirements
+============
+For the example deployment (`make deploy`) the following requirements need to be considered
 
+  * A rather new kustomize binary locally in the PATH
+  * cert-manager needs to be installed in the cluster (for the automatic webhook tls setup)
 
