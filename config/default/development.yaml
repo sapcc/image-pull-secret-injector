@@ -9,3 +9,5 @@ spec:
       containers:
       - name: mutator
         imagePullPolicy: Always
+        args:
+          - --debug

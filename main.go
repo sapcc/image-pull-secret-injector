@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	uberzap "go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -18,12 +19,18 @@ import (
 func main() {
 
 	var imagePullSecretName, imagePullSecretNamespace string
+	var debug bool
 	flag.StringVar(&imagePullSecretName, "image-pull-secret-name", "docker-hub-pull-secret", "Name of the pull secret to inject into pods")
 	flag.StringVar(&imagePullSecretNamespace, "image-pull-secret-namespace", "kube-system", "Name of the pull secret to inject into pods")
+	flag.BoolVar(&debug, "debug", false, "enable debug logging")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
+		//we use debug to get the human readable console encoder every time
 		o.Development = true
+		if !debug {
+			o.Level = uberzap.NewAtomicLevelAt(uberzap.InfoLevel)
+		}
 	}))
 
 	var log = logf.Log.WithName("pull-secrets-injector")
