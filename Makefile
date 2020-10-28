@@ -1,4 +1,4 @@
-IMAGE:= sapcc/pull-secret-injector
+IMAGE ?= sapcc/pull-secret-injector
 VERSION:=0.4.0
 
 manifests: controller-gen
