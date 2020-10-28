@@ -103,7 +103,7 @@ func (a *podMutator) ensurePullSecretInNamespace(ctx context.Context, namespace 
 		}
 		return fmt.Errorf("Failed to get pull secret %s/%s: %w", namespace, pullSecret.Name, err)
 	}
-	if !reflect.DeepEqual(pullSecret, localPullSecret) {
+	if !reflect.DeepEqual(pullSecret.Data, localPullSecret.Data) {
 		a.Log.Info("Update pull secret", "namespace", namespace, "name", pullSecret.Name)
 		localPullSecret.Data = pullSecret.Data
 		return a.Client.Update(ctx, localPullSecret)
