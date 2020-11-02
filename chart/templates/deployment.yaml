@@ -9,10 +9,12 @@ spec:
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
+{{- if gt (.Values.replicaCount | int) 1 }}
   strategy:
     rollingUpdate:
       maxUnavailable: 1 # hello pod anti-affinity ;)
       maxSurge: 1
+{{- end }}
   template:
     metadata:
     {{- with .Values.podAnnotations }}
@@ -22,6 +24,7 @@ spec:
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
     spec:
+{{- if gt (.Values.replicaCount | int) 1 }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -37,6 +40,7 @@ spec:
                 values:
                 - {{ include "chart.name" . }}
             topologyKey: kubernetes.io/hostname
+{{- end }}
       containers:
       - command:
         - /mutator
