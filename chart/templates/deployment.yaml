@@ -9,6 +9,10 @@ spec:
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1 # hello pod anti-affinity ;)
+      maxSurge: 1
   template:
     metadata:
     {{- with .Values.podAnnotations }}
@@ -22,11 +26,16 @@ spec:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
+              {{- /* this has to match `include "chart.selectorLabels" . ` */}}
               matchExpressions:
               - key: app.kubernetes.io/instance
                 operator: In
                 values:
                 - {{ .Release.Name }}
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - {{ include "chart.name" . }}
             topologyKey: kubernetes.io/hostname
       containers:
       - command:
