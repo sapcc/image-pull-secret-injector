@@ -62,7 +62,7 @@ func (a *podMutator) injectImagePullSecret(ctx context.Context, pod *corev1.Pod,
 	}
 
 	dockerHubImageFound := false
-	for _, container := range pod.Spec.Containers {
+	for _, container := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 		if MatchImageHostname(container.Image, "docker.io") {
 			dockerHubImageFound = true
 			break
