@@ -1,10 +1,10 @@
 IMAGE ?= sapcc/pull-secret-injector
-VERSION:=0.4.1
+VERSION ?= 0.4.1
 
 manifests: controller-gen
 	$(CONTROLLER_GEN) paths="./..." webhook rbac:roleName=webhook-server
 
-deploy: 
+deploy:
 	cd config/mutator && kustomize edit set image controller=$(IMAGE):$(VERSION)
 	kustomize build config/default | kubectl apply -f -
 
@@ -20,7 +20,7 @@ ifeq (, $(shell which controller-gen))
 	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
 	cd $$CONTROLLER_GEN_TMP_DIR ;\
 	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0 ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2 ;\
 	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen

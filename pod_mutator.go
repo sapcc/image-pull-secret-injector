@@ -16,16 +16,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-type podMutator struct {
+type PodMutator struct {
 	Log             logr.Logger
 	Client          client.Client
 	ImagePullSecret types.NamespacedName
+	Registries      []string
 	decoder         *admission.Decoder
 }
 
 // +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,name=mpod.kb.io
 
-func (a *podMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
+func (a *PodMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}
 	err := a.decoder.Decode(req, pod)
 	if err != nil {
@@ -49,12 +50,12 @@ func (a *podMutator) Handle(ctx context.Context, req admission.Request) admissio
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
 
-func (a *podMutator) InjectDecoder(d *admission.Decoder) error {
+func (a *PodMutator) InjectDecoder(d *admission.Decoder) error {
 	a.decoder = d
 	return nil
 }
 
-func (a *podMutator) injectImagePullSecret(ctx context.Context, pod *corev1.Pod, namespace, name string) {
+func (a *PodMutator) injectImagePullSecret(ctx context.Context, pod *corev1.Pod, namespace, name string) {
 
 	//if the pod already has an imagePullSecret we have nothing todo
 	if pod.Spec.ImagePullSecrets != nil && len(pod.Spec.ImagePullSecrets) > 0 {
@@ -63,9 +64,11 @@ func (a *podMutator) injectImagePullSecret(ctx context.Context, pod *corev1.Pod,
 
 	dockerHubImageFound := false
 	for _, container := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
-		if MatchImageHostname(container.Image, "docker.io") {
-			dockerHubImageFound = true
-			break
+		for _, r := range a.Registries {
+			if matchImageHostname(container.Image, r) {
+				dockerHubImageFound = true
+				break
+			}
 		}
 	}
 
@@ -81,7 +84,7 @@ func (a *podMutator) injectImagePullSecret(ctx context.Context, pod *corev1.Pod,
 
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update
 
-func (a *podMutator) ensurePullSecretInNamespace(ctx context.Context, namespace string) error {
+func (a *PodMutator) ensurePullSecretInNamespace(ctx context.Context, namespace string) error {
 	//skip if we are in the namespace containing the original image pull secret
 	if a.ImagePullSecret.Namespace == namespace {
 		return nil
@@ -89,7 +92,7 @@ func (a *podMutator) ensurePullSecretInNamespace(ctx context.Context, namespace 
 
 	pullSecret := new(corev1.Secret)
 	if err := a.Client.Get(ctx, a.ImagePullSecret, pullSecret); err != nil {
-		return fmt.Errorf("Failed to get original pull secret %s: %w", a.ImagePullSecret, err)
+		return fmt.Errorf("failed to get original pull secret %s: %w", a.ImagePullSecret, err)
 	}
 
 	localPullSecret := new(corev1.Secret)
@@ -101,7 +104,7 @@ func (a *podMutator) ensurePullSecretInNamespace(ctx context.Context, namespace 
 			a.Log.Info("Creating pull secret", "namespace", namespace, "name", pullSecret.Name)
 			return a.Client.Create(ctx, pullSecret)
 		}
-		return fmt.Errorf("Failed to get pull secret %s/%s: %w", namespace, pullSecret.Name, err)
+		return fmt.Errorf("failed to get pull secret %s/%s: %w", namespace, pullSecret.Name, err)
 	}
 	if !reflect.DeepEqual(pullSecret.Data, localPullSecret.Data) {
 		a.Log.Info("Update pull secret", "namespace", namespace, "name", pullSecret.Name)
@@ -111,7 +114,7 @@ func (a *podMutator) ensurePullSecretInNamespace(ctx context.Context, namespace 
 	return nil
 }
 
-func MatchImageHostname(image, hostname string) bool {
+func matchImageHostname(image, hostname string) bool {
 	ref, err := reference.ParseAnyReference(image)
 	if err != nil {
 		return false

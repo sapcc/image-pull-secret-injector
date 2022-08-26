@@ -24,8 +24,12 @@ spec:
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
     spec:
-{{- if gt (.Values.replicaCount | int) 1 }}
+{{- if or .Values.affinity (and .Values.podAntiAffinity (gt (.Values.replicaCount | int) 1))}}
       affinity:
+    {{- with .Values.affinity }}
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- if and .Values.podAntiAffinity (gt (.Values.replicaCount | int) 1) }}
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
@@ -41,12 +45,16 @@ spec:
                 - {{ include "chart.name" . }}
             topologyKey: kubernetes.io/hostname
 {{- end }}
+{{- end }}
       containers:
       - command:
         - /mutator
         args:
         - --image-pull-secret-name={{ include "chart.fullname" . }}
         - --image-pull-secret-namespace={{ .Release.Namespace }}
+        {{- range .Values.registries }}
+        - --registries={{ . }}
+        {{- end }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         name: mutator
@@ -75,3 +83,7 @@ spec:
         secret:
           defaultMode: 420
           secretName: {{ include "chart.fullname" . }}-tls
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

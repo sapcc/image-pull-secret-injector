@@ -11,6 +11,8 @@ image:
   tag: "0.4.1"
 
 imagePullSecret:
+registries:
+  - docker.io
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -46,3 +48,7 @@ resources:
      cpu: 100m
      memory: 128Mi
 
+podAntiAffinity: true
+
+affinity: {}
+tolerations: []
