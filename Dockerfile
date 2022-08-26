@@ -10,6 +10,7 @@ RUN go mod download
 
 ADD *.go ./
 
+RUN go test ./...
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o mutator .
 
 # Use distroless as minimal base image to package the cmplet binary

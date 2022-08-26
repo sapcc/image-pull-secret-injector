@@ -1,5 +1,5 @@
 IMAGE ?= sapcc/pull-secret-injector
-VERSION ?= 0.4.1
+VERSION ?= 0.5.0
 
 manifests: controller-gen
 	$(CONTROLLER_GEN) paths="./..." webhook rbac:roleName=webhook-server

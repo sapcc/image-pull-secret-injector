@@ -9,12 +9,32 @@ import (
 
 	"github.com/docker/distribution/reference"
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
+
+var (
+	errorTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "image_pull_secret_injection_errors_total",
+		Help: "Total number of errors doing secret injection",
+	})
+	handleTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "image_pull_secret_injection_handled_total",
+		Help: "Total number of pod events handled doing secret injection",
+	})
+)
+
+func init() {
+	metrics.Registry.MustRegister(
+		errorTotal,
+		handleTotal,
+	)
+}
 
 type PodMutator struct {
 	Log             logr.Logger
@@ -27,13 +47,16 @@ type PodMutator struct {
 // +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,name=mpod.kb.io
 
 func (a *PodMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
+	handleTotal.Add(1)
 	pod := &corev1.Pod{}
 	err := a.decoder.Decode(req, pod)
 	if err != nil {
+		errorTotal.Add(1)
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
 	name := req.Name
+
 	if name == "" {
 		name = pod.Name
 	}
@@ -45,6 +68,7 @@ func (a *PodMutator) Handle(ctx context.Context, req admission.Request) admissio
 
 	marshaledPod, err := json.Marshal(pod)
 	if err != nil {
+		errorTotal.Add(1)
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
