@@ -17,7 +17,7 @@ webhooks:
   sideEffects: None
   admissionReviewVersions:
   - v1
-  failurePolicy: Ignore
+  failurePolicy: {{ .Values.mutatingWebhook.failurePolicy }}
   name: mpod.kb.io
   rules:
   - apiGroups:

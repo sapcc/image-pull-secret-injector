@@ -61,3 +61,13 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+chart.rawResource will create a resource template that can be
+merged with each item in `.Values.additionalResources`.
+*/}}
+{{- define "chart.rawResource" -}}
+metadata:
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+{{- end }}

@@ -14,6 +14,9 @@ imagePullSecret:
 registries:
   - docker.io
 
+mutatingWebhook:
+  failurePolicy: Ignore
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -40,6 +43,17 @@ service:
   type: ClusterIP
   port: 443
 
+metrics:
+  enabled: false
+  service:
+    type: ClusterIP
+    port: 80
+  serviceMonitor:
+    enabled: false
+    interval: 15s
+    path: /metrics
+    scrapeTimeout: 5s
+
 resources:
    limits:
      cpu: 100m
@@ -52,3 +66,24 @@ podAntiAffinity: true
 
 affinity: {}
 tolerations: []
+
+pdb:
+  create: false
+  minAvailable: 1
+  maxUnavailable: ""
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPU: 80
+  targetMemory: 80
+
+# additionalResources -- list of additional resources to create (are processed via `tpl` function)
+additionalResources: []
+# - |
+#   apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: {{ include "envoy.fullname" . }}-cm
+#     namespace: {{ .Release.Namespace }}
