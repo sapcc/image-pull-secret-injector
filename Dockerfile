@@ -1,4 +1,4 @@
-FROM golang:1.15 as builder
+FROM golang:1.18 as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -10,6 +10,7 @@ RUN go mod download
 
 ADD *.go ./
 
+RUN go test ./...
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o mutator .
 
 # Use distroless as minimal base image to package the cmplet binary

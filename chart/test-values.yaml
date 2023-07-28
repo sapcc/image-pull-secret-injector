@@ -1,1 +1,13 @@
 imagePullSecret: '{"auths":{"https://index.docker.io/v1/":{"username":"bugroger","password":"test123","auth":"YnVncm9nZXI6dGVzdDEyMw=="}}}'
+registries:
+  - docker.io
+  - ghcr.io
+autoscaling:
+  enabled: true
+pdb:
+  create: true
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

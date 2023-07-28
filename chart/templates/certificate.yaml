@@ -1,4 +1,4 @@
-apiVersion: cert-manager.io/v1alpha2
+apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: {{ include "chart.fullname" . }}
@@ -13,7 +13,7 @@ spec:
     name: {{ include "chart.fullname" . }}
   secretName: {{ include "chart.fullname" . }}-tls
 ---
-apiVersion: cert-manager.io/v1alpha2
+apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: {{ include "chart.fullname" . }}
