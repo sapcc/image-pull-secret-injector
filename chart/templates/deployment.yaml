@@ -45,7 +45,8 @@ spec:
                 - {{ include "chart.name" . }}
             topologyKey: kubernetes.io/hostname
 {{- end }}
-{{- end }}
+      imagePullSecrets:
+        - name: {{ include "chart.fullname" . }}
       containers:
       - command:
         - /mutator
